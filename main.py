@@ -1,13 +1,19 @@
+import calendar
+import datetime
 import multiprocessing
 import sqlite3
 import subprocess
 import argparse
+import time
+
 from tqdm import tqdm
+
+database_filename = "packages" + "_" + str(datetime.datetime.now()) + ".db"
 
 parser = argparse.ArgumentParser()
 # Set to True if you want to store the versions of installed packages in the database
 parser.add_argument('-s', '--store_package_version', action='store_true', help='Store package version')
-parser.add_argument('-d', '--database_name', default='packages.db', help='Name of the SQLite database')
+parser.add_argument('-d', '--database_name', default=database_filename, help='Name of the SQLite database')
 args = parser.parse_args()
 
 # Connection to SQLite database
@@ -41,7 +47,9 @@ with sqlite3.connect(args.database_name) as db_connection:
             # Commit transaction every 1000 rows
             if idx % 1000 == 0:
                 db_connection.commit()
+
         db_connection.commit()
+
         if args.store_package_version is True:
             print("Store version for " + str(total_lines) + " packages, please wait...")
 
@@ -58,9 +66,7 @@ with sqlite3.connect(args.database_name) as db_connection:
 
 
             # Define parallel processing function
-            def parallel_process(function, iterable, n_processes=None):
-                if n_processes is None:
-                    n_processes = multiprocessing.cpu_count()
+            def parallel_process(function, iterable, n_processes=multiprocessing.cpu_count()):
                 with tqdm(total=len(iterable)) as pbar:
                     def update(*a):
                         pbar.update()
